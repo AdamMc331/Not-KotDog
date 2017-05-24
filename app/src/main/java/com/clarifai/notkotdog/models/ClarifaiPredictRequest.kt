@@ -2,7 +2,7 @@ package com.clarifai.notkotdog.models
 
 class ClarifaiConcept
 
-class ClarifaiImage(val base64: String? = "", val crop: FloatArray? = FloatArray(0))
+class ClarifaiImage(val base64: String? = "", val crop: FloatArray? = FloatArray(0), val url: String? = "")
 
 class ClarifaiData(val concepts: List<ClarifaiConcept>? = ArrayList<ClarifaiConcept>(), val image: ClarifaiImage? = null)
 

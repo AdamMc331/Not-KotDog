@@ -129,11 +129,11 @@ class MainActivity : AppCompatActivity() {
 
         if (requestCode == GALLERY_IMAGE_REQUEST && resultCode == RESULT_OK && data != null) {
             val bytes = getImageBytes(data.data)
-            predict(GENERAL_MODEL, bytes)
+            predict(FOOD_MODEL, bytes)
         } else if (requestCode == CAMERA_IMAGE_REQUEST && resultCode == RESULT_OK) {
-            val photoUri: Uri = FileProvider.getUriForFile(this, applicationContext.packageName + ".provider", getCameraFile());
+            val photoUri: Uri = FileProvider.getUriForFile(this, applicationContext.packageName + ".provider", getCameraFile())
             val bytes = getImageBytes(photoUri)
-            predict(GENERAL_MODEL, bytes)
+            predict(FOOD_MODEL, bytes)
         }
     }
 
@@ -202,6 +202,9 @@ class MainActivity : AppCompatActivity() {
         private val CAMERA_IMAGE_REQUEST = 3
 
         private val GENERAL_MODEL = "aaa03c23b3724a16a56b629203edc62c"
+        private val FOOD_MODEL = "bd367be194cf45149e75f01d59f77ba7"
+
+        private val HOTDOG_URL = "http://i.imgur.com/bKHCL1u.png"
 
         private val FILE_NAME = "temp.jpg"
     }
