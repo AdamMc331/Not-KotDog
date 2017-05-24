@@ -8,4 +8,4 @@ class ClarifaiData(val concepts: List<ClarifaiConcept>? = ArrayList<ClarifaiConc
 
 class ClarifaiInput(val data: ClarifaiData? = null)
 
-class ClarifaiRequest(val inputs: List<ClarifaiInput>? = ArrayList())
+class ClarifaiPredictRequest(val inputs: List<ClarifaiInput>? = ArrayList())

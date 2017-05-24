@@ -10,6 +10,8 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import com.clarifai.notkotdog.models.AuthToken
+import com.clarifai.notkotdog.models.ClarifaiPredictRequest
+import com.clarifai.notkotdog.models.ClarifaiPredictResponse
 import com.clarifai.notkotdog.rest.ClarifaiManager
 import com.squareup.moshi.Moshi
 import okhttp3.MediaType
@@ -18,14 +20,16 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-
 class MainActivity : AppCompatActivity() {
+    val manager: ClarifaiManager = ClarifaiManager(getString(R.string.api_id), getString(R.string.api_secret), this)
+
+    //TODO: aaa03c23b3724a16a56b629203edc62c - general
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val toolbar = findViewById(R.id.toolbar) as Toolbar
+        val toolbar = findViewById(R.id.toolbar) as? Toolbar
         setSupportActionBar(toolbar)
 
         val fab = findViewById(R.id.fab) as FloatingActionButton
@@ -51,9 +55,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun authorizeUser() {
-        val manager = ClarifaiManager(getString(R.string.api_id), getString(R.string.api_secret), this)
-
-        val call = manager.authorize(RequestBody.create(MEDIA_TYPE_JSON, "\"grant_type\":\"client_credentials\""))
+        val call = manager.authorize(RequestBody.create(MEDIA_TYPE_JSON, GRANT_TYPE_CREDENTIALS))
 
         call.enqueue(object : Callback<AuthToken> {
             override fun onFailure(call: Call<AuthToken>?, t: Throwable?) {
@@ -72,7 +74,25 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    private fun predict(modelId: String, imageBytes: ByteArray) {
+        //TODO: Build this
+        val request = ClarifaiPredictRequest()
+
+        val call = manager.predict(modelId, request)
+
+        call.enqueue(object : Callback<ClarifaiPredictResponse> {
+            override fun onResponse(call: Call<ClarifaiPredictResponse>?, response: Response<ClarifaiPredictResponse>?) {
+                Log.v(MainActivity::class.java.simpleName, "Success!")
+            }
+
+            override fun onFailure(call: Call<ClarifaiPredictResponse>?, t: Throwable?) {
+                Log.e(MainActivity::class.java.simpleName, t?.message, t)
+            }
+        })
+    }
+
     companion object {
         private val MEDIA_TYPE_JSON = MediaType.parse("application/json; charset=utf8")
+        private val GRANT_TYPE_CREDENTIALS = "\"grant_type\":\"client_credentials\""
     }
 }

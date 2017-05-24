@@ -2,6 +2,8 @@ package com.clarifai.notkotdog.rest
 
 import android.content.Context
 import com.clarifai.notkotdog.models.AuthToken
+import com.clarifai.notkotdog.models.ClarifaiPredictRequest
+import com.clarifai.notkotdog.models.ClarifaiPredictResponse
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody
 import okhttp3.logging.HttpLoggingInterceptor
@@ -33,5 +35,9 @@ class ClarifaiManager(apiId: String, apiSecret: String, context: Context) {
 
     fun authorize(requestBody: RequestBody): Call<AuthToken> {
         return clarifaiApi.authorize(requestBody)
+    }
+
+    fun predict(modelId: String, request: ClarifaiPredictRequest): Call<ClarifaiPredictResponse> {
+        return clarifaiApi.predict(modelId, request)
     }
 }
