@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
@@ -14,11 +16,10 @@ import android.support.v4.content.FileProvider
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
+import android.util.Base64
 import android.view.Menu
 import android.view.MenuItem
-import com.clarifai.notkotdog.models.AuthToken
-import com.clarifai.notkotdog.models.ClarifaiPredictRequest
-import com.clarifai.notkotdog.models.ClarifaiPredictResponse
+import com.clarifai.notkotdog.models.*
 import com.clarifai.notkotdog.rest.ClarifaiManager
 import com.squareup.moshi.Moshi
 import okhttp3.MediaType
@@ -27,13 +28,17 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import timber.log.Timber
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileNotFoundException
+import java.io.InputStream
 
 
 class MainActivity : AppCompatActivity() {
     var manager: ClarifaiManager? = null
 
     //TODO: aaa03c23b3724a16a56b629203edc62c - general
+    //TODO: bd367be194cf45149e75f01d59f77ba7 - food
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -90,15 +95,27 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    private fun predict(modelId: String, imageBytes: ByteArray) {
-        //TODO: Build this
-        val request = ClarifaiPredictRequest()
+    private fun predict(modelId: String, imageBytes: ByteArray?) {
+        // If bytes are null just return
+        if (imageBytes == null) {
+            return
+        }
+
+        // Build out the request
+        val image = ClarifaiImage(
+                Base64.encodeToString(imageBytes, 0),
+                floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f)
+        )
+        val data = ClarifaiData(image = image)
+        val input = ClarifaiInput(data)
+        val request = ClarifaiPredictRequest(arrayListOf(input))
 
         val call = manager?.predict(modelId, request)
 
         call?.enqueue(object : Callback<ClarifaiPredictResponse> {
             override fun onResponse(call: Call<ClarifaiPredictResponse>?, response: Response<ClarifaiPredictResponse>?) {
                 Timber.v("Success!")
+                Timber.v("${response?.body()}")
             }
 
             override fun onFailure(call: Call<ClarifaiPredictResponse>?, t: Throwable?) {
@@ -111,12 +128,12 @@ class MainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
 
         if (requestCode == GALLERY_IMAGE_REQUEST && resultCode == RESULT_OK && data != null) {
-            //TODO:
-            //uploadImage(data.getData());
+            val bytes = getImageBytes(data.data)
+            predict(GENERAL_MODEL, bytes)
         } else if (requestCode == CAMERA_IMAGE_REQUEST && resultCode == RESULT_OK) {
             val photoUri: Uri = FileProvider.getUriForFile(this, applicationContext.packageName + ".provider", getCameraFile());
-            //TODO:
-            //uploadImage(photoUri);
+            val bytes = getImageBytes(photoUri)
+            predict(GENERAL_MODEL, bytes)
         }
     }
 
@@ -149,6 +166,24 @@ class MainActivity : AppCompatActivity() {
         return File(dir, FILE_NAME)
     }
 
+    private fun getImageBytes(uri: Uri): ByteArray? {
+        var inStream: InputStream? = null
+        var bitmap: Bitmap? = null
+
+        try {
+            inStream = contentResolver.openInputStream(uri)
+            bitmap = BitmapFactory.decodeStream(inStream)
+            val outStream = ByteArrayOutputStream()
+            bitmap?.compress(Bitmap.CompressFormat.JPEG, 100, outStream)
+            return outStream.toByteArray()
+        } catch (e: FileNotFoundException) {
+            return null
+        } finally {
+            inStream?.close()
+            bitmap?.recycle()
+        }
+    }
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         when (requestCode) {
             GALLERY_PERMISSIONS_REQUEST -> if (grantResults[0] == PackageManager.PERMISSION_GRANTED) startGalleryChooser()
@@ -165,6 +200,8 @@ class MainActivity : AppCompatActivity() {
         private val GALLERY_IMAGE_REQUEST = 1
         private val CAMERA_PERMISSIONS_REQUEST = 2
         private val CAMERA_IMAGE_REQUEST = 3
+
+        private val GENERAL_MODEL = "aaa03c23b3724a16a56b629203edc62c"
 
         private val FILE_NAME = "temp.jpg"
     }
