@@ -1,5 +1,6 @@
 package com.clarifai.notkotdog
 
+import android.content.Context
 import android.os.Bundle
 import android.support.design.widget.FloatingActionButton
 import android.support.design.widget.Snackbar
@@ -8,8 +9,9 @@ import android.support.v7.widget.Toolbar
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import com.clarifai.notkotdog.models.AuthResponse
+import com.clarifai.notkotdog.models.AuthToken
 import com.clarifai.notkotdog.rest.ClarifaiManager
+import com.squareup.moshi.Moshi
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import retrofit2.Call
@@ -49,17 +51,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun authorizeUser() {
-        val manager = ClarifaiManager(getString(R.string.api_id), getString(R.string.api_secret))
+        val manager = ClarifaiManager(getString(R.string.api_id), getString(R.string.api_secret), this)
 
         val call = manager.authorize(RequestBody.create(MEDIA_TYPE_JSON, "\"grant_type\":\"client_credentials\""))
 
-        call.enqueue(object : Callback<AuthResponse> {
-            override fun onFailure(call: Call<AuthResponse>?, t: Throwable?) {
+        call.enqueue(object : Callback<AuthToken> {
+            override fun onFailure(call: Call<AuthToken>?, t: Throwable?) {
                 Log.e(MainActivity::class.java.simpleName, t?.message, t)
             }
 
-            override fun onResponse(call: Call<AuthResponse>?, response: Response<AuthResponse>?) {
+            override fun onResponse(call: Call<AuthToken>?, response: Response<AuthToken>?) {
                 Log.v(MainActivity::class.java.simpleName, "Success! Token ${response?.body()?.accessToken}")
+
+                val authString = Moshi.Builder().build().adapter(AuthToken::class.java).toJson(response?.body())
+                val prefs = getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+                val editor = prefs.edit()
+                editor.putString(Constants.AUTH_TOKEN_KEY, authString)
+                editor.apply()
             }
         })
     }
