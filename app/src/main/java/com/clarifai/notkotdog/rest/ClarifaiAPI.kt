@@ -9,7 +9,6 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 import retrofit2.http.Path
 
-
 /**
  * Interface for connecting with the API.
  *
@@ -22,6 +21,4 @@ interface ClarifaiAPI {
 
     @POST("/v2/models/{model_id}/outputs")
     fun predict(@Path("model_id") modelId: String, @Body requestBody: ClarifaiPredictRequest): Call<ClarifaiPredictResponse>
-
-    //https://api.clarifai.com/v2/models/aaa03c23b3724a16a56b629203edc62c/outputs
 }

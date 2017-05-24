@@ -16,7 +16,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
  *
  * Created by adam.mcneilly on 5/23/17.
  */
-class ClarifaiManager(apiId: String, apiSecret: String, context: Context) {
+class ClarifaiManager(context: Context, apiId: String, apiSecret: String) {
     private val clarifaiApi: ClarifaiAPI
 
     init {

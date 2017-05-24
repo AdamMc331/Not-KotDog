@@ -1,6 +1,7 @@
 package com.clarifai.notkotdog
 
 import android.Manifest
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -37,14 +38,11 @@ import java.io.InputStream
 class MainActivity : AppCompatActivity() {
     var manager: ClarifaiManager? = null
 
-    //TODO: aaa03c23b3724a16a56b629203edc62c - general
-    //TODO: bd367be194cf45149e75f01d59f77ba7 - food
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        manager = ClarifaiManager(getString(R.string.api_id), getString(R.string.api_secret), this)
+        manager = ClarifaiManager(this, getString(R.string.api_id), getString(R.string.api_secret))
 
         val toolbar = findViewById(R.id.toolbar) as? Toolbar
         setSupportActionBar(toolbar)
@@ -103,8 +101,7 @@ class MainActivity : AppCompatActivity() {
 
         // Build out the request
         val image = ClarifaiImage(
-                Base64.encodeToString(imageBytes, 0),
-                floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f)
+                Base64.encodeToString(imageBytes, 0)
         )
         val data = ClarifaiData(image = image)
         val input = ClarifaiInput(data)
