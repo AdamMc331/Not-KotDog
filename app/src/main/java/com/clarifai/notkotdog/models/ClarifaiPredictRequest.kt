@@ -1,11 +1,8 @@
 package com.clarifai.notkotdog.models
 
-class ClarifaiConcept
-
-class ClarifaiImage(val base64: String? = "", val crop: FloatArray? = FloatArray(0), val url: String? = "")
-
-class ClarifaiData(val concepts: List<ClarifaiConcept>? = ArrayList<ClarifaiConcept>(), val image: ClarifaiImage? = null)
-
-class ClarifaiInput(val data: ClarifaiData? = null)
-
-class ClarifaiPredictRequest(val inputs: List<ClarifaiInput>? = ArrayList())
+/**
+ * Created by adam.mcneilly on 5/25/17.
+ */
+data class ClarifaiPredictRequest(
+        val inputs: List<ClarifaiInput>? = ArrayList()
+)
