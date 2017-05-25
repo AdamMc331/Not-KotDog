@@ -12,6 +12,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.support.design.widget.FloatingActionButton
 import android.support.v4.app.ActivityCompat
+import android.support.v4.content.ContextCompat
 import android.support.v4.content.FileProvider
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
@@ -19,7 +20,9 @@ import android.support.v7.widget.Toolbar
 import android.util.Base64
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.TextView
 import com.clarifai.notkotdog.App
 import com.clarifai.notkotdog.R
@@ -40,8 +43,9 @@ import java.io.InputStream
 
 class MainActivity : AppCompatActivity() {
     var manager: ClarifaiManager? = null
-    var textView: TextView? = null
+    var resultView: TextView? = null
     var imageView: ImageView? = null
+    var progressBar: ProgressBar? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,8 +66,9 @@ class MainActivity : AppCompatActivity() {
                     .show()
         }
 
-        textView = findViewById(R.id.text_view) as TextView
+        resultView = findViewById(R.id.result_view) as TextView
         imageView = findViewById(R.id.image_view) as ImageView
+        progressBar = findViewById(R.id.progress_bar) as ProgressBar
 
         authorizeUser()
     }
@@ -107,6 +112,11 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        // Clear out previous and show loading
+        resultView?.visibility = View.GONE
+        progressBar?.visibility = View.VISIBLE
+        imageView?.setImageBitmap(BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size))
+
         // Build out the request
         val image = ClarifaiImage(
                 Base64.encodeToString(imageBytes, 0)
@@ -117,9 +127,6 @@ class MainActivity : AppCompatActivity() {
 
         val call = manager?.predict(modelId, request)
 
-        textView?.text = getString(R.string.predicting)
-        imageView?.setImageBitmap(BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size))
-
         call?.enqueue(object : Callback<ClarifaiPredictResponse> {
             override fun onResponse(call: Call<ClarifaiPredictResponse>?, response: Response<ClarifaiPredictResponse>?) {
                 Timber.v("Success!")
@@ -127,12 +134,26 @@ class MainActivity : AppCompatActivity() {
 
                 val matchedConcept = response?.body()?.outputs?.first()?.data?.concepts?.any { it.name == HOTDOG_KEY } ?: false
 
-                textView?.text = if (matchedConcept) getString(R.string.hotdog_success) else getString(R.string.hotdog_failure)
+                if (matchedConcept) {
+                    resultView?.text = getString(R.string.hotdog_success)
+                    resultView?.setBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.green))
+                    resultView?.visibility = View.VISIBLE
+                    progressBar?.visibility = View.GONE
+                } else {
+                    resultView?.text = getString(R.string.hotdog_failure)
+                    resultView?.setBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.red))
+                    resultView?.visibility = View.VISIBLE
+                    progressBar?.visibility = View.GONE
+                }
             }
 
             override fun onFailure(call: Call<ClarifaiPredictResponse>?, t: Throwable?) {
                 Timber.e(t)
-                textView?.text = getString(R.string.hotdog_error)
+
+                resultView?.text = getString(R.string.hotdog_error)
+                resultView?.setBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.red))
+                resultView?.visibility = View.VISIBLE
+                progressBar?.visibility = View.GONE
             }
         })
     }
