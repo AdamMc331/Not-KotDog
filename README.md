@@ -12,3 +12,7 @@ All you have to do to run this app is clone the repository, and add two string r
     <string name="api_secret">AAAAASECRET</string>
 </resources>
 ```
+
+## Sample
+
+![NotKotDog](/images/kotdog.gif)
