@@ -17,4 +17,10 @@ class App : Application() {
             Timber.plant(Timber.DebugTree())
         }
     }
+
+    companion object {
+        // Static strings used in the whole app
+        val PREFS_NAME = "NotKotDogPrefs"
+        val AUTH_TOKEN_KEY = "AuthToken"
+    }
 }

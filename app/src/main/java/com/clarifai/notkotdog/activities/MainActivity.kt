@@ -1,7 +1,6 @@
-package com.clarifai.notkotdog
+package com.clarifai.notkotdog.activities
 
 import android.Manifest
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -20,6 +19,8 @@ import android.support.v7.widget.Toolbar
 import android.util.Base64
 import android.view.Menu
 import android.view.MenuItem
+import com.clarifai.notkotdog.App
+import com.clarifai.notkotdog.R
 import com.clarifai.notkotdog.models.*
 import com.clarifai.notkotdog.rest.ClarifaiManager
 import com.squareup.moshi.Moshi
@@ -85,9 +86,9 @@ class MainActivity : AppCompatActivity() {
                 Timber.v("Success! Token ${response?.body()?.accessToken}")
 
                 val authString = Moshi.Builder().build().adapter(AuthToken::class.java).toJson(response?.body())
-                val prefs = getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+                val prefs = getSharedPreferences(App.PREFS_NAME, Context.MODE_PRIVATE)
                 val editor = prefs.edit()
-                editor.putString(Constants.AUTH_TOKEN_KEY, authString)
+                editor.putString(App.AUTH_TOKEN_KEY, authString)
                 editor.apply()
             }
         })
