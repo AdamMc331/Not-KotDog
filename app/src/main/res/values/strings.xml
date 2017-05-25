@@ -1,4 +1,9 @@
 <resources>
     <string name="app_name">Not KotDog</string>
     <string name="action_settings">Settings</string>
+    <string name="selected_image">Selected Image</string>
+    <string name="predicting">Predicting…</string>
+    <string name="hotdog_success">This is a Hot Dog!</string>
+    <string name="hotdog_failure">This is not a hot dog.</string>
+    <string name="hotdog_error">Error determining if this is a hot dog.</string>
 </resources>

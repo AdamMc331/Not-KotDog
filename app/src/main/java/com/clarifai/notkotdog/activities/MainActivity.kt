@@ -19,6 +19,8 @@ import android.support.v7.widget.Toolbar
 import android.util.Base64
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.ImageView
+import android.widget.TextView
 import com.clarifai.notkotdog.App
 import com.clarifai.notkotdog.R
 import com.clarifai.notkotdog.models.*
@@ -38,6 +40,8 @@ import java.io.InputStream
 
 class MainActivity : AppCompatActivity() {
     var manager: ClarifaiManager? = null
+    var textView: TextView? = null
+    var imageView: ImageView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,6 +61,9 @@ class MainActivity : AppCompatActivity() {
                     .create()
                     .show()
         }
+
+        textView = findViewById(R.id.text_view) as TextView
+        imageView = findViewById(R.id.image_view) as ImageView
 
         authorizeUser()
     }
@@ -110,14 +117,22 @@ class MainActivity : AppCompatActivity() {
 
         val call = manager?.predict(modelId, request)
 
+        textView?.text = getString(R.string.predicting)
+        imageView?.setImageBitmap(BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size))
+
         call?.enqueue(object : Callback<ClarifaiPredictResponse> {
             override fun onResponse(call: Call<ClarifaiPredictResponse>?, response: Response<ClarifaiPredictResponse>?) {
                 Timber.v("Success!")
                 Timber.v("${response?.body()}")
+
+                val matchedConcept = response?.body()?.outputs?.first()?.data?.concepts?.any { it.name == HOTDOG_KEY } ?: false
+
+                textView?.text = if (matchedConcept) getString(R.string.hotdog_success) else getString(R.string.hotdog_failure)
             }
 
             override fun onFailure(call: Call<ClarifaiPredictResponse>?, t: Throwable?) {
                 Timber.e(t)
+                textView?.text = getString(R.string.hotdog_error)
             }
         })
     }
@@ -202,6 +217,7 @@ class MainActivity : AppCompatActivity() {
         private val GENERAL_MODEL = "aaa03c23b3724a16a56b629203edc62c"
         private val FOOD_MODEL = "bd367be194cf45149e75f01d59f77ba7"
 
+        private val HOTDOG_KEY = "hot dog"
         private val HOTDOG_URL = "http://i.imgur.com/bKHCL1u.png"
 
         private val FILE_NAME = "temp.jpg"
