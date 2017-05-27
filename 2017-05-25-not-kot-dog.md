@@ -51,7 +51,7 @@ If you would like to see all of the model classes for this project, including th
 
 ## Retrofit & Authorization
 
-Now that we've defined the necessary models used to make our calls,  we need to implement in our app is an authorization call. We will do so using [Retrofit](http://square.github.io/retrofit/), an HTTP Client for Android that was built by Square. This is an industry standard library used for making network requests. Let's start by adding the necessary dependencies into our `build.gradle` file:
+Now that we've defined the necessary models used to make our calls, the next thing we need to implement in our app is an authorization call. We will do so using [Retrofit](http://square.github.io/retrofit/), an HTTP Client for Android that was built by Square. This is an industry standard library used for making network requests. Let's start by adding the necessary dependencies into our `build.gradle` file:
 
 ```groovy
 compile 'com.squareup.retrofit2:retrofit:2.1.0'
@@ -129,7 +129,7 @@ The class accepts two strings, which are your API ID and API Secret, as well as 
 1. If we are trying to hit the token endpoint, we use basic authorization credentials.
 2. If we are trying to access any other endpoint, we use the authorization token that's been stored in shared preferences. We read back the `AuthToken.kt` object as a string and use Moshi to convert it back to an object. We'll discuss how to save that next.
 
-Now that we have our Retrofit service defined, it's time to implement it. We'll do this in our `MainActivity.kt` file inside the `onCreate()` method. Here is a snippet of our activity file that is relevent up to this point:
+Now that we have our Retrofit service defined, it's time to implement it. We'll do this in our `MainActivity.kt` file inside the `onCreate()` method. Here is a snippet of our activity file that is relevant up to this point:
 
 ```kotlin
 class MainActivity : AppCompatActivity() {
@@ -171,6 +171,8 @@ class MainActivity : AppCompatActivity() {
 }
 ```
 
+Inside the `onCreate()` method we create our ClarifaiManager instance using our API credentials, and then using the `authorizeMember()` method we get the call and implement a [Callback](https://square.github.io/retrofit/2.x/retrofit/retrofit2/Callback.html) using an anonymous class that will handle the success or failure response. If it is a failure, we simply log the error. If we are successful, we convert the AuthToken response to a string using Moshi and store it in SharedPreferences, so it can be read by the interceptor we've already created.  
+
 ## Break Point
 
 This would be a good point to pause from the tutorial and test that your application works. Before you run it, here are some additional steps that didn't get covered:
@@ -180,3 +182,98 @@ This would be a good point to pause from the tutorial and test that your applica
     1. > 05-25 13:54:34.619 24830-24830/com.clarifai.notkotdog V/MainActivity$authorizeU: Success! Token jU85Sdyz2moNlGOK6Pl4MVHEu2ZJJj
     
 If you experienced any errors, please double check the source code from GitHub and let us know in the comments so we can update the tutorial accordingly.
+
+## Additional Code
+
+Before diving into implementing the prediction calls, there's some additional code you will want to add to your sample app, **only if you are following along**. If you are just reading through, skip to the predict call section. 
+
+This is code that's not in scope of what this post was designer for. If you would like additional clarification on any of it, please ask in the comments!
+
+* Add a [photo icon drawable](https://github.com/AdamMc331/Not-KotDog/blob/master/app/src/main/res/drawable/ic_photo_white_24dp.xml) to be used for the FAB.
+* Grab the [string](https://github.com/AdamMc331/Not-KotDog/blob/master/app/src/main/res/values/strings.xml) and [color](https://github.com/AdamMc331/Not-KotDog/blob/master/app/src/main/res/values/colors.xml) resources.
+* Update your [AndroidManifest.xml](https://github.com/AdamMc331/Not-KotDog/blob/master/app/src/main/AndroidManifest.xml#L28-L36) file to include the FileProvider and additional permissions. You must also add [provider paths](https://github.com/AdamMc331/Not-KotDog/blob/master/app/src/main/res/xml/provider_paths.xml) as an XML file.
+* Update your `activity_main.xml` and `content_main.xml` files from [here](https://github.com/AdamMc331/Not-KotDog/tree/master/app/src/main/res/layout).
+* The full `MainActivity.kt` code can be found [here](https://github.com/AdamMc331/Not-KotDog/blob/master/app/src/main/java/com/clarifai/notkotdog/activities/MainActivity.kt), but we will discuss some of it still.
+
+## Predict Call
+
+Once you've verified that you can run the app and successfully get an authorization token, we can begin implementing the predict call.
+
+First things first, let's make the corresponding changes to `ClarifaiAPI.kt` and `ClarifaiManager.kt`. These changes should not come as a surprise, they're implemented the same way the `authorize()` call was:
+
+```kotlin
+interface ClarifaiAPI {
+ 
+    ...
+     
+
+    @POST("/v2/models/{model_id}/outputs")
+    fun predict(@Path("model_id") modelId: String, @Body requestBody: ClarifaiPredictRequest): Call<ClarifaiPredictResponse>
+}
+ 
+class ClarifaiManager(context: Context, apiId: String, apiSecret: String) {
+     
+    ...
+     
+    fun predict(modelId: String, request: ClarifaiPredictRequest): Call<ClarifaiPredictResponse> {
+        return clarifaiApi.predict(modelId, request)
+    }
+}
+```
+
+Next, we can implement the predict call inside our activity. Here is the logic it should follow for `Not KotDog`:
+
+1. Show the image we are predicting and a loading state.
+2. Encode the image bytes as a base64 string and build our `ClarifaiPredictRequest`.
+3. Make the call with Retrofit, determine if the picture is a hot dog, and update the view accordingly.
+    1. To determine if we have a hot dog, we will use the concepts returned in the response along with Kotlin's [Collection.Any](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/any.html) method to see if any of the concepts match the name we're looking for. 
+
+```kotlin
+private fun predict(modelId: String, imageBytes: ByteArray?) {
+    // If bytes are null just return
+    if (imageBytes == null) {
+        return
+    }
+ 
+    // Clear out previous and show loading
+    resultView?.visibility = View.GONE
+    progressBar?.visibility = View.VISIBLE
+    imageView?.setImageBitmap(BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size))
+ 
+    // Build out the request
+    val image = ClarifaiImage(
+            Base64.encodeToString(imageBytes, 0)
+    )
+    val data = ClarifaiData(image = image)
+    val input = ClarifaiInput(data)
+    val request = ClarifaiPredictRequest(arrayListOf(input))
+ 
+    val call = manager?.predict(modelId, request)
+ 
+    call?.enqueue(object : Callback<ClarifaiPredictResponse> {
+        override fun onResponse(call: Call<ClarifaiPredictResponse>?, response: Response<ClarifaiPredictResponse>?) {
+            Timber.v("Success!")
+            Timber.v("${response?.body()}")
+ 
+            val matchedConcept = response?.body()?.outputs?.first()?.data?.concepts?.any { it.name == HOTDOG_KEY } ?: false
+             
+            val resultTextResource = if (matchedConcept) R.string.hotdog_success else R.string.hotdog_failure
+            val resultColorResource = if (matchedConcept) R.color.green else R.color.red
+             
+            resultView?.text = getString(resultTextResource)
+            resultView?.setBackgroundColor(ContextCompat.getColor(this@MainActivity, resultColorResource))
+            resultView?.visibility = View.VISIBLE
+            progressBar?.visibility = View.GONE
+        }
+ 
+        override fun onFailure(call: Call<ClarifaiPredictResponse>?, t: Throwable?) {
+            Timber.e(t)
+ 
+            resultView?.text = getString(R.string.hotdog_error)
+            resultView?.setBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.red))
+            resultView?.visibility = View.VISIBLE
+            progressBar?.visibility = View.GONE
+        }
+    })
+}
+```   

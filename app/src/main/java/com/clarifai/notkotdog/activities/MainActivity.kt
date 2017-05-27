@@ -42,11 +42,14 @@ import java.io.InputStream
 
 
 class MainActivity : AppCompatActivity() {
+    //region Properties
     var manager: ClarifaiManager? = null
     var resultView: TextView? = null
     var imageView: ImageView? = null
     var progressBar: ProgressBar? = null
+    //endregion
 
+    //region Lifecycle Methods
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -86,6 +89,29 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == GALLERY_IMAGE_REQUEST && resultCode == RESULT_OK && data != null) {
+            val bytes = getImageBytes(data.data)
+            predict(FOOD_MODEL, bytes)
+        } else if (requestCode == CAMERA_IMAGE_REQUEST && resultCode == RESULT_OK) {
+            val photoUri: Uri = FileProvider.getUriForFile(this, applicationContext.packageName + ".provider", getCameraFile())
+            val bytes = getImageBytes(photoUri)
+            predict(FOOD_MODEL, bytes)
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        when (requestCode) {
+            GALLERY_PERMISSIONS_REQUEST -> if (grantResults[0] == PackageManager.PERMISSION_GRANTED) startGalleryChooser()
+            CAMERA_PERMISSIONS_REQUEST -> if (grantResults[0] == PackageManager.PERMISSION_GRANTED) startCameraChooser()
+            else -> super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        }
+    }
+    //endregion
+
+    //region Clarifai API Methods
     private fun authorizeUser() {
         val call = manager?.authorize(RequestBody.create(MEDIA_TYPE_JSON, GRANT_TYPE_CREDENTIALS))
 
@@ -134,17 +160,13 @@ class MainActivity : AppCompatActivity() {
 
                 val matchedConcept = response?.body()?.outputs?.first()?.data?.concepts?.any { it.name == HOTDOG_KEY } ?: false
 
-                if (matchedConcept) {
-                    resultView?.text = getString(R.string.hotdog_success)
-                    resultView?.setBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.green))
-                    resultView?.visibility = View.VISIBLE
-                    progressBar?.visibility = View.GONE
-                } else {
-                    resultView?.text = getString(R.string.hotdog_failure)
-                    resultView?.setBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.red))
-                    resultView?.visibility = View.VISIBLE
-                    progressBar?.visibility = View.GONE
-                }
+                val resultTextResource = if (matchedConcept) R.string.hotdog_success else R.string.hotdog_failure
+                val resultColorResource = if (matchedConcept) R.color.green else R.color.red
+
+                resultView?.text = getString(resultTextResource)
+                resultView?.setBackgroundColor(ContextCompat.getColor(this@MainActivity, resultColorResource))
+                resultView?.visibility = View.VISIBLE
+                progressBar?.visibility = View.GONE
             }
 
             override fun onFailure(call: Call<ClarifaiPredictResponse>?, t: Throwable?) {
@@ -157,20 +179,9 @@ class MainActivity : AppCompatActivity() {
             }
         })
     }
+    //endregion
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == GALLERY_IMAGE_REQUEST && resultCode == RESULT_OK && data != null) {
-            val bytes = getImageBytes(data.data)
-            predict(FOOD_MODEL, bytes)
-        } else if (requestCode == CAMERA_IMAGE_REQUEST && resultCode == RESULT_OK) {
-            val photoUri: Uri = FileProvider.getUriForFile(this, applicationContext.packageName + ".provider", getCameraFile())
-            val bytes = getImageBytes(photoUri)
-            predict(FOOD_MODEL, bytes)
-        }
-    }
-
+    //region Image Methods
     private fun startGalleryChooser() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
             val intent = Intent()
@@ -217,14 +228,7 @@ class MainActivity : AppCompatActivity() {
             bitmap?.recycle()
         }
     }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        when (requestCode) {
-            GALLERY_PERMISSIONS_REQUEST -> if (grantResults[0] == PackageManager.PERMISSION_GRANTED) startGalleryChooser()
-            CAMERA_PERMISSIONS_REQUEST -> if (grantResults[0] == PackageManager.PERMISSION_GRANTED) startCameraChooser()
-            else -> super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        }
-    }
+    //endregion
 
     companion object {
         private val MEDIA_TYPE_JSON = MediaType.parse("application/json; charset=utf8")
