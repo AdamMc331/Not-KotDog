@@ -15,4 +15,4 @@ All you have to do to run this app is clone the repository, and add two string r
 
 ## Sample
 
-![NotKotDog](/images/kotdog.gif)
+<img src='/images/kotdog.gif' width='400' height='640' />

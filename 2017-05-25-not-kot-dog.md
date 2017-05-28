@@ -282,7 +282,7 @@ To modify this to fit your needs, you'll just need to pass in the appropriate mo
 
 After implementing your predict call, as well as the other necessary code changes mentioned above, you should have something like this:
 
-<img src='/images/kotdog' width='400' height='640' />
+<img src='/images/kotdog.gif' width='400' height='640' />
 
 We hope this post shows you just how simple it is to interface with a RESTful API in Kotlin as well as how easy it is to work with the Clarifai API to do image recognition. 
 
