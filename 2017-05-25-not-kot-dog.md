@@ -125,7 +125,7 @@ class AuthorizationInterceptor(val apiId: String, val apiSecret: String, val con
 }
 ```
 
-The class accepts two strings, which are your API ID and API Secret, as well as a context which is used for shared preferences. Our interceptor does one of two things:
+The class accepts two strings, which are your API ID and API Secret (found under [your application](https://developer.clarifai.com/account/applications/)), as well as a context which is used for shared preferences. Our interceptor does one of two things:
 1. If we are trying to hit the token endpoint, we use basic authorization credentials.
 2. If we are trying to access any other endpoint, we use the authorization token that's been stored in shared preferences. We read back the `AuthToken.kt` object as a string and use Moshi to convert it back to an object. We'll discuss how to save that next.
 
