@@ -277,3 +277,14 @@ private fun predict(modelId: String, imageBytes: ByteArray?) {
     })
 }
 ```   
+
+To modify this to fit your needs, you'll just need to pass in the appropriate model id [which can be found here](https://developer.clarifai.com/models), and change the `onResponse()` logic to look for things other than a hot dog.
+
+After implementing your predict call, as well as the other necessary code changes mentioned above, you should have something like this:
+
+<img src='/images/kotdog' width='400' height='640' />
+
+We hope this post shows you just how simple it is to interface with a RESTful API in Kotlin as well as how easy it is to work with the Clarifai API to do image recognition. 
+
+The full source of this project can be found on [GitHub](https://github.com/adammc331/not-kotdog).
+
