@@ -1,6 +1,6 @@
 # Not KotDog
 
-Not KotDog is an Android app written in Kotlin that uses the [Clarifai](http://clarifai.com) API to tell you whether or not an image is a hotdog.
+Not KotDog is an Android app written in Kotlin that uses the [Clarifai](http://clarifai.com) API to tell you whether or not an image is a hotdog. You can read the blog post [here](http://blog.clarifai.com/not-kotdog-using-clarifai-to-detect-hot-dogs-in-kotlin/#.WTXA3xMrIcg).
 
 ## Setup
 
