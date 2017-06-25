@@ -133,13 +133,11 @@ Now that we have our Retrofit service defined, it's time to implement it. We'll 
 
 ```kotlin
 class MainActivity : AppCompatActivity() {
-    var manager: ClarifaiManager? = null
+    val manager: ClarifaiManager by lazy { ClarifaiManager(this, getString(R.string.api_id), getString(R.string.api_secret)) }
  
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
- 
-        manager = ClarifaiManager(this, getString(R.string.api_id), getString(R.string.api_secret))
  
         authorizeUser()
     }
@@ -171,7 +169,7 @@ class MainActivity : AppCompatActivity() {
 }
 ```
 
-Inside the `onCreate()` method we create our ClarifaiManager instance using our API credentials, and then using the `authorizeMember()` method we get the call and implement a [Callback](https://square.github.io/retrofit/2.x/retrofit/retrofit2/Callback.html) using an anonymous class that will handle the success or failure response. If it is a failure, we simply log the error. If we are successful, we convert the AuthToken response to a string using Moshi and store it in SharedPreferences, so it can be read by the interceptor we've already created.  
+Inside the `onCreate()` method we create our ClarifaiManager instance using our API credentials, and then using the `authorizeMember()` method we get the call and implement a [Callback](https://square.github.io/retrofit/2.x/retrofit/retrofit2/Callback.html) using an anonymous class that will handle the success or failure response. If it is a failure, we simply log the error. If we are successful, we convert the AuthToken response to a string using Moshi and store it in SharedPreferences, so it can be read by the interceptor we've already created. We also make use of the [lazy](https://kotlinlang.org/docs/reference/delegated-properties.html#lazy) delegated property which doesn't assign the value until we first access the manager. This way, we can ensure that it's non-nullable, without using the context until we know it's been created.  
 
 ## Break Point
 

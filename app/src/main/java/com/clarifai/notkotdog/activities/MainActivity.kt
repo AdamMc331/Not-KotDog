@@ -43,7 +43,7 @@ import java.io.InputStream
 
 class MainActivity : AppCompatActivity() {
     //region Properties
-    var manager: ClarifaiManager? = null
+    val manager: ClarifaiManager by lazy { ClarifaiManager(this, getString(R.string.api_id), getString(R.string.api_secret)) }
     var resultView: TextView? = null
     var imageView: ImageView? = null
     var progressBar: ProgressBar? = null
@@ -53,8 +53,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        manager = ClarifaiManager(this, getString(R.string.api_id), getString(R.string.api_secret))
 
         val toolbar = findViewById(R.id.toolbar) as? Toolbar
         setSupportActionBar(toolbar)
