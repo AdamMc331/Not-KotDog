@@ -1,7 +1,6 @@
 package com.clarifai.notkotdog.activities
 
 import android.Manifest
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -17,23 +16,17 @@ import android.support.v4.content.FileProvider
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
-import android.util.Base64
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
-import com.clarifai.notkotdog.App
+import clarifai2.dto.model.output.ClarifaiOutput
+import clarifai2.dto.prediction.Prediction
 import com.clarifai.notkotdog.R
-import com.clarifai.notkotdog.models.*
 import com.clarifai.notkotdog.rest.ClarifaiManager
-import com.squareup.moshi.Moshi
 import okhttp3.MediaType
-import okhttp3.RequestBody
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import timber.log.Timber
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -43,7 +36,7 @@ import java.io.InputStream
 
 class MainActivity : AppCompatActivity() {
     //region Properties
-    val manager: ClarifaiManager by lazy { ClarifaiManager(this, getString(R.string.api_id), getString(R.string.api_secret)) }
+    val manager: ClarifaiManager by lazy { ClarifaiManager(getString(R.string.api_key)) }
     var resultView: TextView? = null
     var imageView: ImageView? = null
     var progressBar: ProgressBar? = null
@@ -71,7 +64,7 @@ class MainActivity : AppCompatActivity() {
         imageView = findViewById(R.id.image_view) as ImageView
         progressBar = findViewById(R.id.progress_bar) as ProgressBar
 
-        authorizeUser()
+        //authorizeUser()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -90,13 +83,15 @@ class MainActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
+        val model = GENERAL_MODEL
+
         if (requestCode == GALLERY_IMAGE_REQUEST && resultCode == RESULT_OK && data != null) {
             val bytes = getImageBytes(data.data)
-            predict(FOOD_MODEL, bytes)
+            predict(model, bytes)
         } else if (requestCode == CAMERA_IMAGE_REQUEST && resultCode == RESULT_OK) {
             val photoUri: Uri = FileProvider.getUriForFile(this, applicationContext.packageName + ".provider", getCameraFile())
             val bytes = getImageBytes(photoUri)
-            predict(FOOD_MODEL, bytes)
+            predict(model, bytes)
         }
     }
 
@@ -109,27 +104,6 @@ class MainActivity : AppCompatActivity() {
     }
     //endregion
 
-    //region Clarifai API Methods
-    private fun authorizeUser() {
-        val call = manager?.authorize(RequestBody.create(MEDIA_TYPE_JSON, GRANT_TYPE_CREDENTIALS))
-
-        call?.enqueue(object : Callback<AuthToken> {
-            override fun onFailure(call: Call<AuthToken>?, t: Throwable?) {
-                Timber.e(t)
-            }
-
-            override fun onResponse(call: Call<AuthToken>?, response: Response<AuthToken>?) {
-                Timber.v("Success! Token ${response?.body()?.accessToken}")
-
-                val authString = Moshi.Builder().build().adapter(AuthToken::class.java).toJson(response?.body())
-                val prefs = getSharedPreferences(App.PREFS_NAME, Context.MODE_PRIVATE)
-                val editor = prefs.edit()
-                editor.putString(App.AUTH_TOKEN_KEY, authString)
-                editor.apply()
-            }
-        })
-    }
-
     private fun predict(modelId: String, imageBytes: ByteArray?) {
         // If bytes are null just return
         if (imageBytes == null) {
@@ -141,23 +115,16 @@ class MainActivity : AppCompatActivity() {
         progressBar?.visibility = View.VISIBLE
         imageView?.setImageBitmap(BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size))
 
-        // Build out the request
-        val image = ClarifaiImage(
-                Base64.encodeToString(imageBytes, 0)
-        )
-        val data = ClarifaiData(image = image)
-        val input = ClarifaiInput(data)
-        val request = ClarifaiPredictRequest(arrayListOf(input))
+        clarifai2.dto.input.ClarifaiInput.forImage(imageBytes)
+        val call = manager?.predict(modelId, clarifai2.dto.input.ClarifaiInput.forImage(imageBytes))
 
-        val call = manager?.predict(modelId, request)
+        call.executeAsync({ response: MutableList<ClarifaiOutput<Prediction>> ->
+            Timber.v("Success!")
+            Timber.v("$response")
 
-        call?.enqueue(object : Callback<ClarifaiPredictResponse> {
-            override fun onResponse(call: Call<ClarifaiPredictResponse>?, response: Response<ClarifaiPredictResponse>?) {
-                Timber.v("Success!")
-                Timber.v("${response?.body()}")
+            val matchedConcept = response.first().data().asSequence().filter { it.isConcept }.any { it.asConcept().name() == HOTDOG_KEY }
 
-                val matchedConcept = response?.body()?.outputs?.first()?.data?.concepts?.any { it.name == HOTDOG_KEY } ?: false
-
+            this@MainActivity.runOnUiThread {
                 val resultTextResource = if (matchedConcept) R.string.hotdog_success else R.string.hotdog_failure
                 val resultColorResource = if (matchedConcept) R.color.green else R.color.red
 
@@ -166,9 +133,9 @@ class MainActivity : AppCompatActivity() {
                 resultView?.visibility = View.VISIBLE
                 progressBar?.visibility = View.GONE
             }
-
-            override fun onFailure(call: Call<ClarifaiPredictResponse>?, t: Throwable?) {
-                Timber.e(t)
+        },{
+            this@MainActivity.runOnUiThread {
+                Timber.e(it.toString())
 
                 resultView?.text = getString(R.string.hotdog_error)
                 resultView?.setBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.red))

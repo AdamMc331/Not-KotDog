@@ -1,43 +1,20 @@
 package com.clarifai.notkotdog.rest
 
-import android.content.Context
-import com.clarifai.notkotdog.models.AuthToken
-import com.clarifai.notkotdog.models.ClarifaiPredictRequest
-import com.clarifai.notkotdog.models.ClarifaiPredictResponse
-import okhttp3.OkHttpClient
-import okhttp3.RequestBody
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Call
-import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
+import clarifai2.api.ClarifaiBuilder
+import clarifai2.api.ClarifaiClient
+import clarifai2.api.request.model.PredictRequest
+import clarifai2.dto.input.ClarifaiInput
+import clarifai2.dto.prediction.Prediction
 
 /**
  * Manager that handles creating a connection to the API.
  *
  * Created by adam.mcneilly on 5/23/17.
  */
-class ClarifaiManager(context: Context, apiId: String, apiSecret: String) {
-    private val clarifaiApi: ClarifaiAPI
+class ClarifaiManager(apiKey: String) {
+    private val clarifaiApi: ClarifaiClient = ClarifaiBuilder(apiKey).buildSync()
 
-    init {
-        val authInterceptor = AuthorizationInterceptor(apiId, apiSecret, context)
-        val loggingInterceptor = HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)
-        val client = OkHttpClient.Builder().addInterceptor(authInterceptor).addInterceptor(loggingInterceptor).build()
-
-        val retrofit = Retrofit.Builder()
-                .baseUrl("https://api.clarifai.com/")
-                .addConverterFactory(MoshiConverterFactory.create())
-                .client(client)
-                .build()
-
-        clarifaiApi = retrofit.create(ClarifaiAPI::class.java)
-    }
-
-    fun authorize(requestBody: RequestBody): Call<AuthToken> {
-        return clarifaiApi.authorize(requestBody)
-    }
-
-    fun predict(modelId: String, request: ClarifaiPredictRequest): Call<ClarifaiPredictResponse> {
-        return clarifaiApi.predict(modelId, request)
+    fun predict(modelId: String, input: ClarifaiInput): PredictRequest<Prediction> {
+        return clarifaiApi.predict(modelId).withInputs(input)
     }
 }
